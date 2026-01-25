@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* Madeira Green & Blue Palette */
+    --color-forest-green: #2E5C47;
+    /* Primary */
+    --color-ocean-blue: #235F85;
+    /* Secondary */
+    --color-sand: #F4F1EA;
+    /* Background */
+    --color-earth: #8C7863;
+    /* Accents */
+
+    --color-text-main: #1A1A1A;
+    --color-text-muted: #666666;
+    --color-white: #FFFFFF;
+
+    /* Status Colors */
+    --color-status-tentative: #F59E0B;
+    --color-status-confirmed: #10B981;
+    --color-status-completed: #3B82F6;
+    --color-status-cancelled: #EF4444;
+
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* Typography */
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+
+    /* UI Elements */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: var(--color-sand);
+    color: var(--color-text-main);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    font-family: var(--font-heading);
+    color: var(--color-forest-green);
+}
+
+/* Utilities */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--spacing-md);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    font-family: var(--font-heading);
+}
+
+.btn-primary {
+    background-color: var(--color-forest-green);
+    color: var(--color-white);
+}
+
+.btn-primary:hover {
+    background-color: #244a39;
+}
+
+.btn-secondary {
+    background-color: var(--color-white);
+    border: 1px solid #e5e7eb;
+    color: var(--color-text-main);
+}
+
+.card {
+    background: var(--color-white);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-md);
+}
+
+.badge {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+}
+
+/* Print Styles */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .report-print-area,
+    .report-print-area * {
+        visibility: visible;
+    }
+
+    .report-print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 20px !important;
+        /* Add some print padding */
+        border: none !important;
+        box-shadow: none !important;
+        background: white !important;
+        z-index: 9999;
+        border-radius: 0 !important;
+        overflow: visible !important;
+    }
+
+    /* Hide print buttons inside the area */
+    .report-print-area button {
+        display: none !important;
+    }
+}
+
+.bg-stripe-diagonal {
+    background-image: repeating-linear-gradient(45deg,
+            rgba(0, 0, 0, 0.06),
+            rgba(0, 0, 0, 0.06) 10px,
+            transparent 10px,
+            transparent 20px);
+}
