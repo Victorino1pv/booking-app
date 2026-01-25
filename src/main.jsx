@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 
+import { GlobalErrorBoundary } from './components/GlobalErrorBoundary.jsx'
+
 console.log('Vite Env Debug:', {
     VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
     VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -14,6 +16,8 @@ console.log('Vite Env Debug:', {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-        <App />
+        <GlobalErrorBoundary>
+            <App />
+        </GlobalErrorBoundary>
     </React.StrictMode>,
 )
