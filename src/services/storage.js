@@ -1,5 +1,13 @@
 
+
 const API_URL = `http://${window.location.hostname}:3001/api`;
+
+// Helper to block production API calls
+const checkEnv = () => {
+    if (!import.meta.env.DEV) {
+        throw new Error("Local API connection disabled in Production. Please enable Cloud Data Sources.");
+    }
+};
 
 /**
  * Async Storage Service (Proxy to Backend)
@@ -8,33 +16,27 @@ export const storageService = {
 
     // FETCH ALL (For initial load / Refresh)
     fetchAll: async () => {
+        checkEnv();
         const response = await fetch(`${API_URL}/data`);
         if (!response.ok) throw new Error('Failed to fetch data');
         return await response.json();
     },
 
     // Individual Getters (Should generally fetch fresh or rely on Context cache)
-    // For migration simplicity, we will assume Context calls fetchAll().
-    // These specific getters might be deprecated or used just to get a specific list?
-    // Let's implement them as individual fetches for safety, though less efficient than bulk.
-    getJeeps: async () => (await fetch(`${API_URL}/data/jeeps`)).json(),
-    getVehicles: async () => (await fetch(`${API_URL}/data/vehicles`)).json(),
-    getTours: async () => (await fetch(`${API_URL}/data/tours`)).json(),
-    getBookings: async () => (await fetch(`${API_URL}/data/bookings`)).json(),
-    getGuests: async () => (await fetch(`${API_URL}/data/guests`)).json(),
-    getMarketSources: async () => (await fetch(`${API_URL}/data/marketSources`)).json(),
-    getAgents: async () => (await fetch(`${API_URL}/data/agents`)).json(),
-    getRates: async () => (await fetch(`${API_URL}/data/rates`)).json(),
-    getSettings: async () => (await fetch(`${API_URL}/data/settings`)).json(),
-    getVehicleBlocks: async () => (await fetch(`${API_URL}/data/vehicleBlocks`)).json(),
+    getJeeps: async () => { checkEnv(); return (await fetch(`${API_URL}/data/jeeps`)).json(); },
+    getVehicles: async () => { checkEnv(); return (await fetch(`${API_URL}/data/vehicles`)).json(); },
+    getTours: async () => { checkEnv(); return (await fetch(`${API_URL}/data/tours`)).json(); },
+    getBookings: async () => { checkEnv(); return (await fetch(`${API_URL}/data/bookings`)).json(); },
+    getGuests: async () => { checkEnv(); return (await fetch(`${API_URL}/data/guests`)).json(); },
+    getMarketSources: async () => { checkEnv(); return (await fetch(`${API_URL}/data/marketSources`)).json(); },
+    getAgents: async () => { checkEnv(); return (await fetch(`${API_URL}/data/agents`)).json(); },
+    getRates: async () => { checkEnv(); return (await fetch(`${API_URL}/data/rates`)).json(); },
+    getSettings: async () => { checkEnv(); return (await fetch(`${API_URL}/data/settings`)).json(); },
+    getVehicleBlocks: async () => { checkEnv(); return (await fetch(`${API_URL}/data/vehicleBlocks`)).json(); },
 
     // SAVERS (Async)
-    // Common pattern: Fetch list -> Update -> Post list back (Simplest transition from localStorage)
-    // OPTIMIZATION: Ideally backend handles "Add one", but our backend is "Post Key".
-    // So we must: Get Current List -> Append -> Send Full List.
-    // This has race conditions but acceptable for single-user dev usage.
-
     _saveCollection: async (key, data) => {
+        checkEnv();
         await fetch(`${API_URL}/data/${key}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -43,7 +45,10 @@ export const storageService = {
     },
 
     saveBooking: async (booking) => {
-        const bookings = await storageService.getBookings();
+        // Optimistic update locally BEFORE fetch? No, this service IS the fetch.
+        // But for "save" operations, we might want to checkEnv too.
+        checkEnv();
+        const bookings = await storageService.getBookings(); // Will throw if env check fails
         if (!booking.bookingRef) booking.bookingRef = storageService._generateRef(6);
 
         const idx = bookings.findIndex(b => b.id === booking.id);
@@ -59,12 +64,14 @@ export const storageService = {
     },
 
     deleteBooking: async (id) => {
+        checkEnv();
         let bookings = await storageService.getBookings();
         bookings = bookings.filter(b => b.id !== id);
         await storageService._saveCollection('bookings', bookings);
     },
 
     saveGuest: async (guest) => {
+        checkEnv();
         const guests = await storageService.getGuests();
 
         // Ensure Profile Ref
@@ -79,7 +86,7 @@ export const storageService = {
     },
 
     deleteGuest: async (guestId) => {
-        // Needs to check bookings first?
+        checkEnv();
         const bookings = await storageService.getBookings();
         if (bookings.some(b => b.guestId === guestId)) return { success: false, error: 'HAS_BOOKINGS' };
 
@@ -90,6 +97,7 @@ export const storageService = {
     },
 
     saveVehicleBlock: async (block) => {
+        checkEnv();
         const blocks = await storageService.getVehicleBlocks();
         const idx = blocks.findIndex(b => b.vehicleId === block.vehicleId && b.date === block.date);
 
@@ -101,42 +109,49 @@ export const storageService = {
     },
 
     deleteVehicleBlock: async (blockId) => {
+        checkEnv();
         let blocks = await storageService.getVehicleBlocks();
         blocks = blocks.filter(b => b.id !== blockId);
         await storageService._saveCollection('vehicleBlocks', blocks);
     },
 
     saveMarketSource: async (item) => {
+        checkEnv();
         const list = await storageService.getMarketSources();
         const idx = list.findIndex(i => i.id === item.id);
         if (idx >= 0) list[idx] = item; else list.push(item);
         await storageService._saveCollection('marketSources', list);
     },
     saveVehicle: async (item) => {
+        checkEnv();
         const list = await storageService.getVehicles();
         const idx = list.findIndex(i => i.id === item.id);
         if (idx >= 0) list[idx] = item; else list.push(item);
         await storageService._saveCollection('vehicles', list);
     },
     saveAgent: async (item) => {
+        checkEnv();
         const list = await storageService.getAgents();
         const idx = list.findIndex(i => i.id === item.id);
         if (idx >= 0) list[idx] = item; else list.push(item);
         await storageService._saveCollection('agents', list);
     },
     saveRate: async (item) => {
+        checkEnv();
         const list = await storageService.getRates();
         const idx = list.findIndex(i => i.id === item.id);
         if (idx >= 0) list[idx] = item; else list.push(item);
         await storageService._saveCollection('rates', list);
     },
     saveTour: async (item) => {
+        checkEnv();
         const list = await storageService.getTours();
         const idx = list.findIndex(i => i.id === item.id);
         if (idx >= 0) list[idx] = item; else list.push(item);
         await storageService._saveCollection('tours', list);
     },
     saveSettings: async (item) => {
+        checkEnv();
         await storageService._saveCollection('settings', item);
     },
 

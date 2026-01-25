@@ -352,6 +352,7 @@ export function SettingsPage() {
                 {/* --- DIAGNOSTICS TAB --- */}
                 {activeTab === 'diagnostics' && (
                     <section className="bg-white p-6 rounded-xl shadow-sm border space-y-6">
+
                         <div className="flex justify-between items-center">
                             <h2 className="text-lg font-bold">System Diagnostics</h2>
                             <div className="flex gap-2">
@@ -366,6 +367,17 @@ export function SettingsPage() {
                                 >
                                     Reset Local Data
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* Production Debug Info */}
+                        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded text-sm text-yellow-800">
+                            <div className="font-bold flex gap-4">
+                                <span>Build: {import.meta.env.PROD ? 'PROD' : 'DEV'}</span>
+                                <span>Data Mode: {import.meta.env.VITE_USE_SUPABASE_BOOKINGS === 'true' ? 'CLOUD ONLY' : 'HYBRID / LOCAL'}</span>
+                            </div>
+                            <div className="text-xs mt-1 opacity-75">
+                                Time: {new Date().toISOString()}
                             </div>
                         </div>
 
