@@ -396,7 +396,6 @@ export function BookingsProvider({ children }) {
             pickup_location: b.pickup?.location,
             pickup_time: b.pickup?.time,
             notes: b.notes,
-            notes: b.notes,
             // Split Reminder (UI Object -> DB Columns)
             reminder_at: b.reminder?.date ? `${b.reminder.date}T09:00:00` : null,
             reminder_text: b.reminder?.text || null,
