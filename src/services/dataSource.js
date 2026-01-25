@@ -252,9 +252,9 @@ export const dataSource = {
     },
 
     // Complex Booking Save (Payload Construction)
-    saveBooking: async (b, mapToSupabasePayload) => {
+    saveBooking: async (b) => {
         if (getSource('bookings') === 'supabase') {
-            const payload = mapToSupabasePayload(b); // Delegate complexity to caller? Or move mapper here (better).
+            // const payload = mapToSupabasePayload(b); // REMOVED: Crashing bug (t is not a function)
             // Actually reusing the mapper from BookingsContext is tricky if we move it here.
             // Let's implement basic sanitize here or expect the caller to pass clean data?
             // The prompt "Centralize function..." implies moving logic here.
