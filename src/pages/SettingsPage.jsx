@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useBookings } from '../hooks/useBookings';
+import { runSupabaseDiagnostics } from '../utils/supabaseDiagnostics';
 import { generateUUID } from '../services/storage';
 import { Plus, Check, X, Edit2 } from 'lucide-react';
 
@@ -353,18 +354,22 @@ export function SettingsPage() {
                     <section className="bg-white p-6 rounded-xl shadow-sm border space-y-6">
                         <div className="flex justify-between items-center">
                             <h2 className="text-lg font-bold">System Diagnostics</h2>
-                            <button
-                                onClick={async () => {
-                                    if (confirm("Reset ALL Local Data (This Device)? This will not affect Cloud data.")) {
-                                        localStorage.clear();
-                                        window.location.reload();
-                                    }
-                                }}
-                                className="text-xs bg-red-100 text-red-700 font-bold px-3 py-1.5 rounded hover:bg-red-200 border border-red-200"
-                            >
-                                Reset Local Data
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={async () => {
+                                        if (confirm("Reset ALL Local Data (This Device)? This will not affect Cloud data.")) {
+                                            localStorage.clear();
+                                            window.location.reload();
+                                        }
+                                    }}
+                                    className="text-xs bg-red-100 text-red-700 font-bold px-3 py-1.5 rounded hover:bg-red-200 border border-red-200"
+                                >
+                                    Reset Local Data
+                                </button>
+                            </div>
                         </div>
+
+                        <ProductionDiagnosticsPanel />
 
                         {lastError && (
                             <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded">
@@ -610,6 +615,81 @@ function TestConnectionButton() {
             >
                 Test DB Connection
             </button>
+        </div>
+    );
+}
+
+function ProductionDiagnosticsPanel() {
+    const [results, setResults] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    const run = async () => {
+        setLoading(true);
+        const res = await runSupabaseDiagnostics();
+        setResults(res);
+        setLoading(false);
+    };
+
+    return (
+        <div className="p-4 bg-gray-50 rounded border">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-gray-700">Production Cloud Connectivity (Full)</h3>
+                <button
+                    onClick={run}
+                    disabled={loading}
+                    className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                    {loading ? "Running Checks..." : "Run Full Diagnostics"}
+                </button>
+            </div>
+
+            {results && (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="text-xs text-gray-500 bg-gray-100 uppercase border-b">
+                            <tr>
+                                <th className="px-3 py-2">Table</th>
+                                <th className="px-3 py-2">Status</th>
+                                <th className="px-3 py-2">Result</th>
+                                <th className="px-3 py-2">Latency</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                            {results.length ? results.map((r) => (
+                                <tr key={r.table} className={r.ok ? "bg-white" : "bg-red-50"}>
+                                    <td className="px-3 py-2 font-mono text-xs">{r.table}</td>
+                                    <td className="px-3 py-2">
+                                        {r.ok ? (
+                                            <span className="text-green-600 font-bold flex items-center gap-1"><Check size={14} /> OK</span>
+                                        ) : (
+                                            <span className="text-red-600 font-bold flex items-center gap-1"><X size={14} /> Error</span>
+                                        )}
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        {r.ok ? (
+                                            <span className="text-gray-500 text-xs">Access Granted (Count: {r.count ?? '?'})</span>
+                                        ) : (
+                                            <div className="text-xs text-red-700 space-y-0.5">
+                                                <div><strong>Msg:</strong> {r.message}</div>
+                                                {r.details && <div><strong>Details:</strong> {r.details}</div>}
+                                                {r.hint && <div><strong>Hint:</strong> {r.hint}</div>}
+                                                {r.code && <div><strong>Code:</strong> {r.code}</div>}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="px-3 py-2 text-xs text-gray-500 text-right">{r.duration}ms</td>
+                                </tr>
+                            )) : (
+                                !Array.isArray(results) && results.error && (
+                                    <tr>
+                                        <td className="px-3 py-2 text-red-600 font-bold" colSpan={4}>Global Error: {results.error}</td>
+                                    </tr>
+                                )
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }
