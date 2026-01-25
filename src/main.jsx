@@ -14,10 +14,14 @@ console.log('Vite Env Debug:', {
     MODE: import.meta.env.MODE
 });
 
+import { AuthProvider } from './context/AuthContext.jsx'
+
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <GlobalErrorBoundary>
-            <App />
+            <AuthProvider>
+                <App />
+            </AuthProvider>
         </GlobalErrorBoundary>
     </React.StrictMode>,
 )

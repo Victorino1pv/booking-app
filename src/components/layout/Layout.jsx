@@ -4,7 +4,11 @@ import { Home, Calendar, PieChart, Settings, LogOut, Users } from 'lucide-react'
 import { clsx } from 'clsx';
 import { SearchBar } from '../common/SearchBar';
 
+import { useAuth } from '../../context/AuthContext';
+
 export function Layout() {
+    const { signOut, user } = useAuth();
+
     return (
         <div className="flex h-screen bg-[var(--color-sand)] font-body text-[var(--color-text-main)]">
             {/* Sidebar */}
@@ -33,23 +37,27 @@ export function Layout() {
 
                 <div className="p-4 border-t">
                     <button
-                        onClick={() => {
-                            if (confirm('Reset all data?')) {
-                                localStorage.clear();
-                                window.location.reload();
+                        onClick={async () => {
+                            if (confirm('Sign out?')) {
+                                try {
+                                    await signOut();
+                                    // Navigate is handled by ProtectedRoute
+                                } catch (e) {
+                                    alert('Error signing out');
+                                }
                             }
                         }}
                         className="flex items-center gap-3 px-4 py-3 w-full text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
                         <LogOut size={20} />
-                        <span className="font-medium">Reset Data</span>
+                        <span className="font-medium">Sign Out</span>
                     </button>
                     <div className="mt-4 flex items-center gap-3 px-4">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm">
-                            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User" className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm flex items-center justify-center font-bold text-gray-500">
+                            {user?.email?.charAt(0).toUpperCase() || 'U'}
                         </div>
-                        <div>
-                            <p className="text-sm font-bold text-gray-800">Victor Daniel</p>
+                        <div className="overflow-hidden">
+                            <p className="text-sm font-bold text-gray-800 truncate" title={user?.email}>{user?.email || 'User'}</p>
                             <p className="text-xs text-gray-500">Admin</p>
                         </div>
                     </div>
