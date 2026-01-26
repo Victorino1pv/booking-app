@@ -350,11 +350,17 @@ export const dataSource = {
                 });
             }
 
+            // EMERGENCY DEBUG: Alert in PROD to verify payload
+            // Remove this after verification
+            if (!dbPayload.tour_date) {
+                const msg = `CRITICAL ERROR: Tour Date is MISSING. Payload: ${JSON.stringify(dbPayload)}`;
+                alert(msg);
+                throw new Error(msg);
+            }
+
             // Hard Validation: No Nulls allowed for key relations
             if (!dbPayload.guest_id) throw new Error(`Missing Guest ID (UUID) for booking.`);
             if (!dbPayload.vehicle_id) throw new Error(`Missing Vehicle ID (UUID) for booking. Value '${vehicleId}' was invalid.`);
-            if (!dbPayload.tour_date) throw new Error(`Missing Tour Date for booking.`);
-            // Agent can be null, but if provided must be valid (handled by sanitizeId -> null)
 
             const { error } = await supabase.from('bookings').upsert(dbPayload);
             if (error) throw error;
