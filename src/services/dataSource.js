@@ -279,7 +279,8 @@ export const dataSource = {
             };
 
             // Extract date/vehicle from tourRunId if needed
-            let date = b.date || b.tourDate || b.tour_date;
+            // Robust Resolver as requested
+            let date = b.tour_date ?? b.tourDate ?? b.date ?? b.tour_run_date;
             let vehicleId = b.jeepId || b.vehicleId;
 
             // Robust Date Extraction: If missing, extract from tourRunId regardless of vehicleId
@@ -291,7 +292,15 @@ export const dataSource = {
             }
 
             // Format Date (Ensure YYYY-MM-DD)
-            if (date instanceof Date) date = date.toISOString().split('T')[0];
+            if (date instanceof Date) {
+                date = date.toISOString().split('T')[0];
+            } else if (typeof date === 'string') {
+                // Handle DD/MM/YYYY
+                if (date.includes('/')) {
+                    const [d, m, y] = date.split('/');
+                    if (d && m && y) date = `${y}-${m}-${d}`;
+                }
+            }
 
             // Fallback only if no explicit vehicleId (legacy)
             if (!vehicleId && b.tourRunId) {
