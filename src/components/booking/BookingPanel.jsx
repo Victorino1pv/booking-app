@@ -254,6 +254,7 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
         const payload = {
             id: initialBookingId || generateUUID(),
             guestId: formData.guestId,
+            vehicleId: jeepId, // Explicitly pass Vehicle ID
             tourRunId: `${formData.date}-${jeepId}`,
             createdDate: initialBookingId ? bookings.find(b => b.id === initialBookingId).createdDate : new Date().toISOString(),
             status: formData.status,

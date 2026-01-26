@@ -288,11 +288,34 @@ export function BookingsProvider({ children }) {
     const addBooking = async (bookingData) => {
         try {
             const guestRef = await ensureGuest(bookingData); // wrapper above
-            // guestRef is {id: '...'} or guest object
+            // Fix: ensureGuest returns ID string (Cloud) or Object (Local Legacy)
+            const resolvedGuestId = (typeof guestRef === 'object' && guestRef !== null) ? guestRef.id : guestRef;
+
+            if (!resolvedGuestId) throw new Error("Failed to resolve Guest ID");
+
+            // Validation: Vehicle ID is critical (Cloud)
+            // Parse vehicleId from tourRunId if not explicit, but explicit is better.
+            let vehicleId = bookingData.jeepId || bookingData.vehicleId;
+            if (!vehicleId && bookingData.tourRunId) {
+                const parts = bookingData.tourRunId.split('-');
+                // Try to extract if format matches (legacy format is tricky with UUIDs)
+                // If tourRunId is "DATE-UUID", vehicleId is parts.slice(3).join('-') which is... wait.
+                // Standard format: YYYY-MM-DD-VEHICLEID
+                vehicleId = parts.slice(3).join('-');
+            }
+
+            // Strict Check
+            if (import.meta.env.DEV) {
+                console.log("[DEV] AddBooking Payload:", {
+                    ...bookingData,
+                    guestId: resolvedGuestId,
+                    vehicleId
+                });
+            }
 
             const finalBooking = {
                 ...bookingData,
-                guestId: guestRef.id,
+                guestId: resolvedGuestId,
                 bookingRef: bookingData.bookingRef || generateUUID().slice(0, 6).toUpperCase()
             };
 
@@ -309,7 +332,14 @@ export function BookingsProvider({ children }) {
     const updateBooking = async (bookingData) => {
         try {
             const guestRef = await ensureGuest(bookingData);
-            const finalBooking = { ...bookingData, guestId: guestRef.id };
+            const resolvedGuestId = (typeof guestRef === 'object' && guestRef !== null) ? guestRef.id : guestRef;
+
+            const finalBooking = { ...bookingData, guestId: resolvedGuestId };
+
+            if (import.meta.env.DEV) {
+                console.log("[DEV] UpdateBooking Payload:", finalBooking);
+            }
+
             await dataSource.saveBooking(finalBooking);
             await refresh();
             return finalBooking;

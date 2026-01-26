@@ -307,6 +307,21 @@ export const dataSource = {
                 reminder: null
             };
 
+            // Instrument: Log Payload (DEV only)
+            if (import.meta.env.DEV) {
+                console.log("Supabase Insert Payload:", {
+                    booking_id: dbPayload.id,
+                    guest_id: dbPayload.guest_id,
+                    vehicle_id: dbPayload.vehicle_id,
+                    agent_id: dbPayload.agent_id,
+                    original_vehicle: vehicleId
+                });
+            }
+
+            // Hard Validation: No Nulls allowed for key relations
+            if (!dbPayload.guest_id) throw new Error(`Missing Guest ID for booking. Guest creation might have failed.`);
+            if (!dbPayload.vehicle_id) throw new Error(`Missing Vehicle ID. Selected '${vehicleId}' is likely invalid or legacy.`);
+
             const { error } = await supabase.from('bookings').upsert(dbPayload);
             if (error) throw error;
         } else {
