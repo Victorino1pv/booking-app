@@ -263,6 +263,7 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
             id: initialBookingId || generateUUID(),
             guestId: formData.guestId,
             vehicleId: jeepId, // Explicitly pass Vehicle ID
+            date: formData.date, // Explicitly pass Date
             tourRunId: `${formData.date}-${jeepId}`,
             createdDate: initialBookingId ? bookings.find(b => b.id === initialBookingId).createdDate : new Date().toISOString(),
             status: formData.status,

@@ -279,14 +279,25 @@ export const dataSource = {
             };
 
             // Extract date/vehicle from tourRunId if needed
-            let date = b.date;
+            let date = b.date || b.tourDate || b.tour_date;
             let vehicleId = b.jeepId || b.vehicleId;
+
+            // Robust Date Extraction: If missing, extract from tourRunId regardless of vehicleId
+            if (!date && b.tourRunId) {
+                const parts = b.tourRunId.split('-');
+                if (parts.length >= 3) {
+                    date = `${parts[0]}-${parts[1]}-${parts[2]}`;
+                }
+            }
+
+            // Format Date (Ensure YYYY-MM-DD)
+            if (date instanceof Date) date = date.toISOString().split('T')[0];
+
             // Fallback only if no explicit vehicleId (legacy)
             if (!vehicleId && b.tourRunId) {
-                if (b.tourRunId) {
-                    const parts = b.tourRunId.split('-');
-                    date = `${parts[0]}-${parts[1]}-${parts[2]}`;
-                    // Only try to use path-based ID if it looks like UUID, else ignore
+                const parts = b.tourRunId.split('-');
+                // Only try to use path-based ID if it looks like UUID, else ignore
+                if (parts.length > 3) {
                     const possibleId = parts.slice(3).join('-');
                     if (isUuid(possibleId)) vehicleId = possibleId;
                 }
@@ -325,7 +336,7 @@ export const dataSource = {
                     booking_id: dbPayload.id,
                     guest_id: dbPayload.guest_id,
                     vehicle_id: dbPayload.vehicle_id,
-                    agent_id: dbPayload.agent_id,
+                    tour_date: dbPayload.tour_date, // Added check
                     original_vehicle: vehicleId
                 });
             }
@@ -333,6 +344,7 @@ export const dataSource = {
             // Hard Validation: No Nulls allowed for key relations
             if (!dbPayload.guest_id) throw new Error(`Missing Guest ID (UUID) for booking.`);
             if (!dbPayload.vehicle_id) throw new Error(`Missing Vehicle ID (UUID) for booking. Value '${vehicleId}' was invalid.`);
+            if (!dbPayload.tour_date) throw new Error(`Missing Tour Date for booking.`);
             // Agent can be null, but if provided must be valid (handled by sanitizeId -> null)
 
             const { error } = await supabase.from('bookings').upsert(dbPayload);
