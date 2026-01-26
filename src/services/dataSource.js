@@ -267,16 +267,28 @@ export const dataSource = {
             // Wait, BookingsContext has sanitizeId / isUuid. I should copy them here as helpers.
             // Re-implementing mapping here is safer for "Centralization".
             const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-            const sanitizeId = (id) => (id && isUuid(id) ? id : null);
+
+            const sanitizeId = (id, fieldName) => {
+                if (!id) return null;
+                if (isUuid(id)) return id;
+                // Log invalid ID rejection in DEV
+                if (import.meta.env.DEV) {
+                    console.warn(`[Supabase] Rejected non-UUID for ${fieldName || 'field'}:`, id);
+                }
+                return null;
+            };
 
             // Extract date/vehicle from tourRunId if needed
             let date = b.date;
             let vehicleId = b.jeepId || b.vehicleId;
-            if (!date || !vehicleId) {
+            // Fallback only if no explicit vehicleId (legacy)
+            if (!vehicleId && b.tourRunId) {
                 if (b.tourRunId) {
                     const parts = b.tourRunId.split('-');
                     date = `${parts[0]}-${parts[1]}-${parts[2]}`;
-                    vehicleId = parts.slice(3).join('-');
+                    // Only try to use path-based ID if it looks like UUID, else ignore
+                    const possibleId = parts.slice(3).join('-');
+                    if (isUuid(possibleId)) vehicleId = possibleId;
                 }
             }
 
@@ -284,11 +296,11 @@ export const dataSource = {
                 id: b.id,
                 booking_ref: b.bookingRef,
                 tour_date: date,
-                vehicle_id: sanitizeId(vehicleId),
-                tour_id: sanitizeId(b.tourOptionId),
-                guest_id: sanitizeId(b.guestId),
-                agent_id: sanitizeId(b.agentId || b.agent_id),
-                market_source_id: sanitizeId(b.marketSourceId),
+                vehicle_id: sanitizeId(vehicleId, 'vehicle_id'),
+                tour_id: sanitizeId(b.tourOptionId, 'tour_id'),
+                guest_id: sanitizeId(b.guestId, 'guest_id'),
+                agent_id: sanitizeId(b.agentId || b.agent_id, 'agent_id'),
+                market_source_id: sanitizeId(b.marketSourceId, 'market_source_id'),
                 market_source_detail: b.marketSourceDetail || null,
                 status: b.status,
                 payment_status: b.paymentStatus,
@@ -319,8 +331,9 @@ export const dataSource = {
             }
 
             // Hard Validation: No Nulls allowed for key relations
-            if (!dbPayload.guest_id) throw new Error(`Missing Guest ID for booking. Guest creation might have failed.`);
-            if (!dbPayload.vehicle_id) throw new Error(`Missing Vehicle ID. Selected '${vehicleId}' is likely invalid or legacy.`);
+            if (!dbPayload.guest_id) throw new Error(`Missing Guest ID (UUID) for booking.`);
+            if (!dbPayload.vehicle_id) throw new Error(`Missing Vehicle ID (UUID) for booking. Value '${vehicleId}' was invalid.`);
+            // Agent can be null, but if provided must be valid (handled by sanitizeId -> null)
 
             const { error } = await supabase.from('bookings').upsert(dbPayload);
             if (error) throw error;

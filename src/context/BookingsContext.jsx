@@ -291,6 +291,13 @@ export function BookingsProvider({ children }) {
             // Fix: ensureGuest returns ID string (Cloud) or Object (Local Legacy)
             const resolvedGuestId = (typeof guestRef === 'object' && guestRef !== null) ? guestRef.id : guestRef;
 
+            const isUuid = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+            // Cloud Strict Check
+            if (bookingsSource === 'supabase' && (!resolvedGuestId || !isUuid(resolvedGuestId))) {
+                throw new Error(`Invalid Guest ID: ${resolvedGuestId}. Only UUIDs allowed in Cloud mode.`);
+            }
+
             if (!resolvedGuestId) throw new Error("Failed to resolve Guest ID");
 
             // Validation: Vehicle ID is critical (Cloud)

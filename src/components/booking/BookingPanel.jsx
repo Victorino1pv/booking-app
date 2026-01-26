@@ -16,6 +16,13 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
     // Default Market Source
     const defaultMarketSource = marketSources.find(s => s.isActive)?.id || '';
 
+    // Helper: Get Default Vehicle ID (First Active UUID)
+    const getDefaultVehicleId = () => {
+        if (propJeepId && propJeepId !== 'jeep-1') return propJeepId; // valid prop passed?
+        const firstActive = vehicles.find(v => v.isActive !== false);
+        return firstActive ? firstActive.id : '';
+    };
+
     // Form State
     const [formData, setFormData] = useState({
         // Profile
@@ -34,7 +41,7 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
         tourOptionId: '',
         rateType: RateType.SHARED,
         seats: 1,
-        jeepId: propJeepId || 'jeep-1', // Default, should be selectable?
+        jeepId: '', // Will be set via useEffect or lazy init if possible. Let's use useEffect to sync with vehicles load.
         pickupLocation: '',
         pickupTime: '09:00',
 
@@ -55,6 +62,14 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
         reminderDate: '',
         reminderText: ''
     });
+
+    // Initialize Default Jeep ID once vehicles are loaded
+    useEffect(() => {
+        if (!initialBookingId && !formData.jeepId && vehicles.length > 0) {
+            const defId = getDefaultVehicleId();
+            if (defId) setFormData(prev => ({ ...prev, jeepId: defId }));
+        }
+    }, [vehicles, initialBookingId, propJeepId]);
 
     const [guestMode, setGuestMode] = useState('new'); // 'new' | 'existing'
     const [formErrors, setFormErrors] = useState({});
@@ -91,7 +106,7 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
                     email: booking.email || '',
 
                     date: booking.tourRunId.substring(0, 10),
-                    jeepId: booking.tourRunId.split('-').slice(3).join('-') || 'jeep-1', // Extract jeepId? format is date-jeepId
+                    jeepId: booking.vehicleId || booking.tourRunId.split('-').slice(3).join('-') || getDefaultVehicleId(), // Prefer stored vehicleId
                     tourOptionId: booking.tourOptionId || '',
                     rateType: booking.rateType,
                     seats: booking.seats,
@@ -114,15 +129,8 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
                 setGuestMode('existing');
                 // setActiveTab('tour'); // Optional: start on tour if editing? 
             }
-        } else {
-            // Reset defaults if creating new
-            setFormData(prev => ({
-                ...prev,
-                date: date || prev.date,
-                jeepId: propJeepId || prev.jeepId // Update if prop changes
-            }));
         }
-    }, [initialBookingId, bookings, date, propJeepId]);
+    }, [initialBookingId, bookings, date, propJeepId, vehicles]);
 
     // Derived State
     const targetDate = formData.date;
