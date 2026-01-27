@@ -73,6 +73,7 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
 
     const [guestMode, setGuestMode] = useState('new'); // 'new' | 'existing'
     const [formErrors, setFormErrors] = useState({});
+    const [saveError, setSaveError] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Duplicate Detection
@@ -193,47 +194,48 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
     }, [formData.pricingMode, formData.customPrice, price]);
 
     // Handlers
-    const handleSave = (e) => {
-        e.preventDefault();
+    // Validation Helper
+    const validateForm = (data) => {
         const errors = {};
 
-        // Profile Validation
-        // Construct full name if missing but parts exist
-        const derivedName = formData.leadGuestName || `${formData.firstName} ${formData.surname}`.trim();
+        // Profile
+        /* Note: leadGuestName is derived, so we check parts or derived result */
+        const derivedName = data.leadGuestName || `${data.firstName} ${data.surname}`.trim();
+        if (!derivedName) errors.leadGuestName = "Guest Name is required";
 
-        if (!derivedName.trim()) errors.leadGuestName = "Name is required";
-        if (guestMode === 'new' && !formData.phone.trim()) errors.phone = "Phone is required for new guests";
+        if (guestMode === 'new' && !data.phone.trim()) errors.phone = "Phone is required for new guests";
+        if (guestMode === 'existing' && !data.guestId) errors.guestId = "Please select a guest";
 
-        // Match existing guest if mode is existing but no ID (should rely on ensureGuest)
-        // But for UI feedback:
-        if (guestMode === 'existing' && !formData.guestId) errors.guestId = "Please select a guest";
+        // Tour
+        if (!data.date) errors.date = "Date is required";
+        if (!data.jeepId) errors.jeepId = "Vehicle is required";
+        if (!data.tourOptionId) errors.tourOptionId = "Tour Option is required";
 
-        // Tour Validation
-        if (!formData.date) errors.date = "Date is required";
-        if (!formData.jeepId) errors.jeepId = "Jeep selection is required";
-        if (!formData.tourOptionId) errors.tourOptionId = "Tour Option is required"; // We don't have this in UI yet? Ah, we probably do or should. 
-        // NOTE: The previous code didn't show Tour Option selector. I should check if it exists or if I need to add it.
-        // Assuming it's in the 'Tour' tab content which I didn't verify fully. 
-        // Let's assume standard checks.
+        return { isValid: Object.keys(errors).length === 0, errors };
+    };
 
-        if (Object.keys(errors).length > 0) {
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setFormErrors({});
+        setSaveError(null);
+
+        // 1. UI Validation (Immediate Feedback)
+        const { isValid, errors } = validateForm(formData);
+        if (!isValid) {
             setFormErrors(errors);
-            // Switch to tab with error
+            // Switch to relevant tab
             if (errors.leadGuestName || errors.phone || errors.guestId) setActiveTab('profile');
-            else if (errors.jeepId || errors.tourOptionId) setActiveTab('tour');
+            else if (errors.jeepId || errors.tourOptionId || errors.date) setActiveTab('tour');
             return;
         }
 
+        // 2. Availability / Domain Check (Blocking)
         if (!availability.allowed && formData.status !== BookingStatus.CANCELLED && formData.status !== BookingStatus.NO_SHOW) {
             alert(availability.reason);
             return;
         }
 
-        // --- DUPLICATE CHECK ---
-        // Only run if: 
-        // 1. Creating NEW guest (no guestId)
-        // 2. We haven't explicitly ignored duplicates
-        // 3. We have enough info to check (Survivor + Phone/Email)
+        // 3. Duplicate Check
         if (!formData.guestId && !ignoreDuplicate && formData.surname) {
             const cleanPhone = (formData.phone || '').replace(/\D/g, '');
             const cleanSurname = (formData.surname || '').trim().toLowerCase();
@@ -245,11 +247,8 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
                 const gEmail = (g.email || '').trim().toLowerCase();
 
                 if (gSurname !== cleanSurname) return false;
-
-                // Match if Surname AND (Phone OR Email) matches
                 const phoneMatch = cleanPhone && gPhone && cleanPhone === gPhone;
                 const emailMatch = cleanEmail && gEmail && cleanEmail === gEmail;
-
                 return phoneMatch || emailMatch;
             });
 
@@ -258,65 +257,62 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
                 return;
             }
         }
-        // -----------------------
 
+        // 4. Construct Payload
         const payload = {
             id: initialBookingId || generateUUID(),
             guestId: formData.guestId,
-            vehicleId: jeepId, // Explicitly pass Vehicle ID
-            date: formData.date, // Explicitly pass Date
+            vehicleId: jeepId,
+            date: formData.date,
             tourRunId: `${formData.date}-${jeepId}`,
             createdDate: initialBookingId ? bookings.find(b => b.id === initialBookingId).createdDate : new Date().toISOString(),
             status: formData.status,
             paymentStatus: formData.paymentStatus,
-
             totalPrice: finalPrice,
             pricingMode: formData.pricingMode,
             customPrice: Number(formData.customPrice),
-
             leadGuestName: formData.leadGuestName || `${formData.firstName} ${formData.surname}`.trim(),
             title: formData.title,
             firstName: formData.firstName,
             surname: formData.surname,
             nationality: formData.nationality,
-
             phone: formData.phone,
             email: formData.email,
-
             seats: Number(formData.seats),
             tourOptionId: formData.tourOptionId,
             rateType: formData.rateType,
             pricePerPerson: formData.rateType === 'SHARED' ? 60 : 0,
             privatePrice: formData.rateType === 'PRIVATE' ? 350 : 0,
-
             marketSourceId: formData.marketSourceId,
             marketSourceDetail: formData.marketSourceDetail,
             agentId: formData.agentId,
-
-            pickup: {
-                location: formData.pickupLocation,
-                time: formData.pickupTime
-            },
+            pickup: { location: formData.pickupLocation, time: formData.pickupTime },
             notes: formData.notes,
-            reminder: (formData.reminderDate && formData.reminderText) ? {
-                date: formData.reminderDate,
-                text: formData.reminderText
-            } : null
+            reminder: (formData.reminderDate && formData.reminderText) ? { date: formData.reminderDate, text: formData.reminderText } : null
         };
 
-        const validation = validateBooking(payload, vehicleCapacity);
-        if (!validation.isValid) {
-            setFormErrors(validation.errors);
-            // Auto-focus logic could go here or via useEffect
+        // 5. Final Domain Validation (Rules.js)
+        const domainValidation = validateBooking(payload, vehicleCapacity);
+        if (!domainValidation.isValid) {
+            setFormErrors(domainValidation.errors);
+            // Check if errors map to unknown tabs? mostly tour/profile.
             return;
         }
 
-        if (initialBookingId) {
-            updateBooking(payload);
-        } else {
-            addBooking(payload);
+        // 6. Submit (Async Safety)
+        try {
+            if (initialBookingId) {
+                await updateBooking(payload);
+            } else {
+                await addBooking(payload);
+            }
+            onClose();
+        } catch (err) {
+            console.error("Save Failed:", err);
+            setSaveError(err.message || "An error occurred while saving.");
+            // Also alert for visibility if user is looking elsewhere
+            // alert("Save Failed: " + err.message); 
         }
-        onClose();
     };
 
     const handleConfirmDelete = () => {
@@ -374,6 +370,15 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
                 <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded"><X size={20} /></button>
             </div>
 
+            {/* Validation Alert */}
+            {saveError && (
+                <div className="bg-red-100 border-b border-red-200 p-3 flex items-start gap-3 animate-in slide-in-from-top-2">
+                    <div className="text-red-600 mt-0.5"><AlertTriangle size={16} /></div>
+                    <div className="text-sm text-red-800 font-bold">
+                        {saveError}
+                    </div>
+                </div>
+            )}
             {/* Validation Alert */}
             {
                 Object.keys(formErrors).length > 0 && (
