@@ -155,7 +155,7 @@ export function validateBooking(booking, seatCapacity = MAX_CAPACITY) {
     if (!booking.date && !booking.tourRunId) errors.date = "Date is required";
     // Stricter: If tourRunId exists but is just "-jeepId", we still need a date.
     // For now, rely on booking.date if present.
-    if (booking.date === "" || booking.date === null) errors.date = "Date is required";
+    if (booking.date === "" || booking.date === null) errors.date = "Tour Date is required";
     if (!booking.tourOptionId) errors.tourOptionId = "Tour Option is required";
     if (!booking.seats || booking.seats < 1) errors.seats = "Pax must be at least 1";
     if (booking.seats > seatCapacity) errors.seats = `Max capacity is ${seatCapacity}`;
