@@ -280,7 +280,8 @@ export const dataSource = {
 
             // Extract date/vehicle from tourRunId if needed
             // Robust Resolver as requested
-            let date = b.tour_date ?? b.tourDate ?? b.date ?? b.tour_run_date;
+            // FIX: Prioritize 'b.date' (Explicit from UI) over 'b.tour_date' (Potential stale DB read)
+            let date = b.date ?? b.tour_date ?? b.tourDate ?? b.tour_run_date;
             let vehicleId = b.jeepId || b.vehicleId;
 
             // Robust Date Extraction: If missing, extract from tourRunId regardless of vehicleId
@@ -297,8 +298,9 @@ export const dataSource = {
             } else if (typeof date === 'string') {
                 // Handle DD/MM/YYYY
                 if (date.includes('/')) {
-                    const [d, m, y] = date.split('/');
-                    if (d && m && y) date = `${y}-${m}-${d}`;
+                    const parts = date.split('/');
+                    // DD/MM/YYYY -> YYYY-MM-DD
+                    if (parts.length === 3) date = `${parts[2]}-${parts[1]}-${parts[0]}`;
                 }
             }
 
@@ -315,7 +317,7 @@ export const dataSource = {
             const dbPayload = {
                 id: b.id,
                 booking_ref: b.bookingRef,
-                tour_date: date,
+                tour_date: date, // Mapped from resolved 'date' (from b.date)
                 vehicle_id: sanitizeId(vehicleId, 'vehicle_id'),
                 tour_id: sanitizeId(b.tourOptionId, 'tour_id'),
                 guest_id: sanitizeId(b.guestId, 'guest_id'),
