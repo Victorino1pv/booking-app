@@ -152,9 +152,12 @@ export function BookingsProvider({ children }) {
     };
 
     const deleteGuest = async (guestId) => {
-        await storageService.deleteGuest(guestId);
-        setVersion(v => v + 1);
-        return { success: true };
+        const result = await dataSource.deleteGuest(guestId);
+        if (result.success) {
+            setVersion(v => v + 1);
+            await refresh(); // Ensure list is synced
+        }
+        return result;
     };
 
     const blockVehicle = async (block) => {

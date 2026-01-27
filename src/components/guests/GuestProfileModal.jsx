@@ -40,8 +40,8 @@ export function GuestProfileModal() {
         setShowDeleteConfirm(true);
     };
 
-    const handleConfirmDelete = () => {
-        const result = deleteGuest(guestId);
+    const handleConfirmDelete = async () => {
+        const result = await deleteGuest(guestId);
         if (result.success) {
             closeGuestProfile();
         } else if (result.error === 'HAS_BOOKINGS') {

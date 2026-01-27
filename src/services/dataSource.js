@@ -439,10 +439,24 @@ export const dataSource = {
 
     deleteGuest: async (id) => {
         if (getSource('bookings') === 'supabase') { // Guests tied to Booking Source
+            // 1. Guard: Check for existing bookings
+            const { count, error: countError } = await supabase
+                .from('bookings')
+                .select('id', { count: 'exact', head: true })
+                .eq('guest_id', id);
+
+            if (countError) throw countError;
+
+            if (count > 0) {
+                return { success: false, error: 'HAS_BOOKINGS' };
+            }
+
+            // 2. Delete if safe
             const { error } = await supabase.from('guests').delete().eq('id', id);
             if (error) throw error;
             return { success: true };
         } else {
+            // Local fallback (Legacy)
             return await storageService.deleteGuest(id);
         }
     }
