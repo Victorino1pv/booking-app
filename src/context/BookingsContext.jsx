@@ -299,6 +299,7 @@ export function BookingsProvider({ children }) {
             }
 
             if (!resolvedGuestId) throw new Error("Failed to resolve Guest ID");
+            if (!bookingData.date) throw new Error("Missing Date in Booking Data");
 
             // Validation: Vehicle ID is critical (Cloud)
             // Parse vehicleId from tourRunId if not explicit, but explicit is better.
@@ -340,6 +341,8 @@ export function BookingsProvider({ children }) {
         try {
             const guestRef = await ensureGuest(bookingData);
             const resolvedGuestId = (typeof guestRef === 'object' && guestRef !== null) ? guestRef.id : guestRef;
+
+            if (!bookingData.date) throw new Error("Missing Date in Update Booking Data");
 
             const finalBooking = { ...bookingData, guestId: resolvedGuestId };
 

@@ -209,6 +209,7 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
         if (guestMode === 'existing' && !formData.guestId) errors.guestId = "Please select a guest";
 
         // Tour Validation
+        if (!formData.date) errors.date = "Date is required";
         if (!formData.jeepId) errors.jeepId = "Jeep selection is required";
         if (!formData.tourOptionId) errors.tourOptionId = "Tour Option is required"; // We don't have this in UI yet? Ah, we probably do or should. 
         // NOTE: The previous code didn't show Tour Option selector. I should check if it exists or if I need to add it.
