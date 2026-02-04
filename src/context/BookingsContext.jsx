@@ -160,6 +160,18 @@ export function BookingsProvider({ children }) {
         return result;
     };
 
+    const updateGuest = async (guestData) => {
+        try {
+            await dataSource.updateGuest(guestData);
+            setVersion(v => v + 1);
+            await refresh();
+            return { success: true };
+        } catch (err) {
+            console.error("Update Guest Error:", err);
+            throw err;
+        }
+    };
+
     const blockVehicle = async (block) => {
         try {
             await dataSource.saveVehicleBlock(block);
@@ -377,6 +389,7 @@ export function BookingsProvider({ children }) {
         saveTour,
         saveSettings,
         deleteGuest,
+        updateGuest,
         blockVehicle,
         unblockVehicle,
         blockVehicleRange,

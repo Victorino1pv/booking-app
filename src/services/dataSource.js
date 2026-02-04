@@ -437,6 +437,29 @@ export const dataSource = {
         }
     },
 
+    updateGuest: async (guest) => {
+        if (getSource('bookings') === 'supabase') {
+            const payload = {
+                id: guest.id,
+                first_name: guest.firstName,
+                surname: guest.surname,
+                email: guest.email,
+                phone: guest.phone,
+                nationality: guest.nationality,
+                title: guest.title,
+                notes: guest.notes
+            };
+            const { error } = await supabase.from('guests').update(payload).eq('id', guest.id);
+            if (error) throw error;
+            return { success: true };
+        } else {
+            // Local Fallback
+            // assuming storageService has saveGuest (upsert behavior)
+            await storageService.saveGuest(guest);
+            return { success: true };
+        }
+    },
+
     deleteGuest: async (id) => {
         if (getSource('bookings') === 'supabase') { // Guests tied to Booking Source
             // 1. Guard: Check for existing bookings

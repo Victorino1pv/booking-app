@@ -3,17 +3,19 @@ import React, { useState, useMemo } from 'react';
 import { useGuestModal } from '../../context/GuestModalContext';
 import { useBookings } from '../../hooks/useBookings';
 import { useBookingModal } from '../../context/BookingModalContext';
-import { X, User, Phone, Mail, MapPin, Calendar, CheckCircle, AlertCircle, Clock, Trash2 } from 'lucide-react';
+import { X, User, Phone, Mail, MapPin, Calendar, CheckCircle, AlertCircle, Clock, Trash2, Pencil, Save } from 'lucide-react';
 import { format } from 'date-fns';
 import { BookingStatus } from '../../domain/models';
 
 export function GuestProfileModal() {
     const { isOpen, guestId, closeGuestProfile } = useGuestModal();
-    const { guests, bookings, tours, deleteGuest } = useBookings();
+    const { guests, bookings, tours, deleteGuest, updateGuest } = useBookings();
     const { openEdit } = useBookingModal();
 
     const [showCancelled, setShowCancelled] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({});
 
     // ... logic for handlers later ...
 
@@ -89,17 +91,79 @@ export function GuestProfileModal() {
                         <div className="w-12 h-12 rounded-full bg-[var(--color-forest-green)] text-white flex items-center justify-center text-xl font-bold">
                             {guest.firstName?.[0]}{guest.surname?.[0]}
                         </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900">
-                                {guest.title && <span className="text-gray-500 font-normal mr-1">{guest.title}</span>}
-                                {guest.firstName} {guest.surname}
-                            </h2>
+                        <div className="flex-1">
+                            {isEditing ? (
+                                <div className="grid grid-cols-3 gap-2">
+                                    <select
+                                        className="p-1 border rounded"
+                                        value={editForm.title}
+                                        onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                                    >
+                                        <option value="">-</option>
+                                        <option value="Mr">Mr</option>
+                                        <option value="Mrs">Mrs</option>
+                                        <option value="Ms">Ms</option>
+                                        <option value="Dr">Dr</option>
+                                    </select>
+                                    <input
+                                        className="p-1 border rounded"
+                                        placeholder="First Name"
+                                        value={editForm.firstName}
+                                        onChange={e => setEditForm({ ...editForm, firstName: e.target.value })}
+                                    />
+                                    <input
+                                        className="p-1 border rounded"
+                                        placeholder="Surname"
+                                        value={editForm.surname}
+                                        onChange={e => setEditForm({ ...editForm, surname: e.target.value })}
+                                    />
+                                </div>
+                            ) : (
+                                <h2 className="text-xl font-bold text-gray-900">
+                                    {guest.title && <span className="text-gray-500 font-normal mr-1">{guest.title}</span>}
+                                    {guest.firstName} {guest.surname}
+                                </h2>
+                            )}
                             <div className="text-sm font-mono text-gray-500">Ref: {guest.profileRef || '---'}</div>
                         </div>
                     </div>
-                    <button onClick={closeGuestProfile} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                        <X size={24} className="text-gray-500" />
-                    </button>
+                    <div className="flex gap-2">
+                        {!isEditing ? (
+                            <button
+                                onClick={() => {
+                                    setEditForm({ ...guest });
+                                    setIsEditing(true);
+                                }}
+                                className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-600"
+                                title="Edit Profile"
+                            >
+                                <Pencil size={20} />
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={async () => {
+                                        await updateGuest(editForm);
+                                        setIsEditing(false);
+                                    }}
+                                    className="p-2 bg-[var(--color-forest-green)] text-white rounded-full hover:opacity-90 transition-colors"
+                                    title="Save Changes"
+                                >
+                                    <Save size={20} />
+                                </button>
+                                <button
+                                    onClick={() => setIsEditing(false)}
+                                    className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-600"
+                                    title="Cancel"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </>
+                        )}
+                        <button onClick={closeGuestProfile} className="p-2 hover:bg-gray-200 rounded-full transition-colors ml-2">
+                            <X size={24} className="text-gray-500" />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6">
@@ -109,19 +173,43 @@ export function GuestProfileModal() {
                             <div className="flex items-center gap-2 text-gray-500 mb-2 text-sm font-medium uppercase tracking-wide">
                                 <Phone size={16} /> Phone
                             </div>
-                            <div className="text-lg font-semibold text-gray-900">{guest.phone}</div>
+                            {isEditing ? (
+                                <input
+                                    className="w-full p-2 border rounded"
+                                    value={editForm.phone || ''}
+                                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                                />
+                            ) : (
+                                <div className="text-lg font-semibold text-gray-900">{guest.phone}</div>
+                            )}
                         </div>
                         <div className="p-4 bg-gray-50 rounded-xl border">
                             <div className="flex items-center gap-2 text-gray-500 mb-2 text-sm font-medium uppercase tracking-wide">
                                 <Mail size={16} /> Email
                             </div>
-                            <div className="text-lg font-semibold text-gray-900 break-words">{guest.email || '—'}</div>
+                            {isEditing ? (
+                                <input
+                                    className="w-full p-2 border rounded"
+                                    value={editForm.email || ''}
+                                    onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                                />
+                            ) : (
+                                <div className="text-lg font-semibold text-gray-900 break-words">{guest.email || '—'}</div>
+                            )}
                         </div>
                         <div className="p-4 bg-gray-50 rounded-xl border">
                             <div className="flex items-center gap-2 text-gray-500 mb-2 text-sm font-medium uppercase tracking-wide">
                                 <MapPin size={16} /> Nationality
                             </div>
-                            <div className="text-lg font-semibold text-gray-900">{guest.nationality || '—'}</div>
+                            {isEditing ? (
+                                <input
+                                    className="w-full p-2 border rounded"
+                                    value={editForm.nationality || ''}
+                                    onChange={e => setEditForm({ ...editForm, nationality: e.target.value })}
+                                />
+                            ) : (
+                                <div className="text-lg font-semibold text-gray-900">{guest.nationality || '—'}</div>
+                            )}
                         </div>
                     </div>
 
