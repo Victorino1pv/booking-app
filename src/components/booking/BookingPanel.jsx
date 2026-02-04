@@ -203,7 +203,8 @@ export function BookingPanel({ date, jeepId: propJeepId, onClose, initialBooking
         const derivedName = data.leadGuestName || `${data.firstName} ${data.surname}`.trim();
         if (!derivedName) errors.leadGuestName = "Guest Name is required";
 
-        if (guestMode === 'new' && !data.phone.trim()) errors.phone = "Phone is required for new guests";
+        // RELAXED: Phone is optional for new guests per user request
+        // if (guestMode === 'new' && !data.phone.trim()) errors.phone = "Phone is required for new guests";
         if (guestMode === 'existing' && !data.guestId) errors.guestId = "Please select a guest";
 
         // Tour
